@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DebateAI | Premium Coach</title>
+    
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+    <style>
+        /* --- THEME: Glassmorphism + Neon --- */
+        :root {
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-highlight: rgba(255, 255, 255, 0.15);
+            --neon-blue: #00f0ff;
+            --neon-purple: #bd00ff;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --bg-gradient: radial-gradient(circle at 10% 20%, rgb(17, 24, 39) 0%, rgb(10, 10, 20) 90%);
+        }
+
+        * { box-sizing: border-box; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        body {
+            font-family: 'Satoshi', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Glows */
+        .glow-orb {
+            position: absolute; width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(118, 52, 247, 0.15) 0%, rgba(0,0,0,0) 70%);
+            top: -200px; left: 20%; z-index: -1; pointer-events: none;
+            animation: float 10s ease-in-out infinite;
+        }
+        .glow-orb.two {
+            top: auto; bottom: -200px; left: auto; right: 10%;
+            background: radial-gradient(circle, rgba(0, 240, 255, 0.1) 0%, rgba(0,0,0,0) 70%);
+            animation-delay: 5s;
+        }
+
+        /* GLASS PANEL */
+        .glass-panel {
+            max-width: 1000px; margin: 0 auto;
+            background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: 24px; padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            position: relative; overflow: hidden;
+        }
+
+        /* HEADER */
+        header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 40px; border-bottom: 1px solid var(--glass-border); padding-bottom: 20px;
+        }
+        .brand { font-size: 1.5rem; font-weight: 900; letter-spacing: -1px; }
+        .brand span { background: linear-gradient(to right, var(--neon-blue), var(--neon-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        /* METRICS */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: rgba(0,0,0,0.2); padding: 20px; border-radius: 16px; text-align: center; border: 1px solid var(--glass-border); }
+        .stat-val { font-size: 2.5rem; font-weight: 700; color: var(--text-main); display: block; }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; }
+
+        /* CONTROLS */
+        .controls-row { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        select {
+            background: rgba(0,0,0,0.3); color: white; border: 1px solid var(--glass-border);
+            padding: 12px 20px; border-radius: 12px; flex: 1; font-family: inherit; cursor: pointer;
+        }
+        select:focus { outline: none; border-color: var(--neon-blue); }
+
+        .btn {
+            padding: 12px 24px; border-radius: 12px; border: none; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; gap: 8px; font-size: 0.95rem;
+        }
+        .btn-primary { background: linear-gradient(135deg, var(--neon-blue), #0072ff); color: #000; box-shadow: 0 0 20px rgba(0, 240, 255, 0.3); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(0, 240, 255, 0.5); }
+        .btn-danger { background: rgba(255, 50, 50, 0.1); color: #ff5555; border: 1px solid rgba(255, 50, 50, 0.3); }
+        .btn-danger:hover { background: rgba(255, 50, 50, 0.2); }
+        .btn-ghost { background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--glass-border); }
+        .btn-ghost:hover { background: rgba(255,255,255,0.1); }
+        .btn-record.recording { background: #ff0055; color: white; box-shadow: 0 0 20px rgba(255, 0, 85, 0.4); animation: pulse-red 1.5s infinite; }
+
+        /* INPUTS */
+        .input-wrapper { position: relative; margin-bottom: 20px; }
+        textarea {
+            width: 100%; height: 250px; background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border); border-radius: 16px; padding: 25px;
+            color: var(--text-main); font-size: 1.1rem; line-height: 1.6; resize: vertical; font-family: 'Satoshi', sans-serif;
+        }
+        textarea:focus { outline: none; border-color: var(--neon-blue); background: rgba(0,0,0,0.3); }
+
+        .file-zone {
+            display: flex; align-items: center; justify-content: center; padding: 10px;
+            background: rgba(255,255,255,0.03); border: 1px dashed var(--glass-border);
+            border-radius: 12px; margin-bottom: 20px; cursor: pointer; color: var(--text-muted); font-size: 0.9rem;
+        }
+        .file-zone:hover { border-color: var(--neon-blue); color: white; }
+        .file-zone i { margin-right: 10px; }
+
+        /* FEEDBACK */
+        .feedback-panel {
+            margin-top: 40px; padding: 30px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+            border-top: 1px solid var(--glass-border); border-radius: 0 0 24px 24px;
+            display: none; animation: slideUp 0.5s ease;
+        }
+        .feedback-panel h3 { color: var(--neon-blue); margin-top: 0; display: flex; align-items: center; gap: 10px; }
+        .feedback-content strong { color: var(--neon-purple); }
+        .feedback-content { line-height: 1.8; opacity: 0.9; }
+
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .loader { display: none; text-align: center; padding: 20px; font-style: italic; color: var(--neon-blue); }
+    </style>
+</head>
+<body>
+
+    <div class="glow-orb"></div>
+    <div class="glow-orb two"></div>
+
+    <div class="glass-panel">
+        <header>
+            <div class="brand"><i class="fa-solid fa-microphone-lines"></i> Debate<span>Coach.AI</span></div>
+            <div style="font-size: 0.9rem; color: var(--text-muted);"></div>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-val" id="timerDisplay">00:00</span>
+                <span class="stat-label">Time Elapsed</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-val" id="wpmDisplay">0</span>
+                <span class="stat-label">Words / Min</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-val" id="fillerDisplay" style="color: #ff5555">0</span>
+                <span class="stat-label">Weak Words</span>
+            </div>
+        </div>
+
+        <div class="controls-row">
+            <select id="formatSelect">
+                <option value="default">Format: General</option>
+                <option value="lincoln_douglas">Format: Lincoln-Douglas (LD)</option>
+                <option value="public_forum">Format: Public Forum (PF)</option>
+                <option value="congressional">Format: Congressional</option>
+                <option value="spar">Format: SPAR</option>
+            </select>
+            <button class="btn btn-ghost" id="topicBtn"><i class="fa-solid fa-dice"></i> New Topic</button>
+            <button class="btn btn-danger" id="clearBtn"><i class="fa-solid fa-trash"></i> Clear</button>
+        </div>
+
+        <div class="file-zone" id="dropZone">
+            <input type="file" id="fileInput" accept=".txt,.pdf,.docx" hidden>
+            <i class="fa-solid fa-cloud-arrow-up"></i> 
+            <span>Click to upload or Drag & Drop (PDF, DOCX, TXT)</span>
+        </div>
+
+        <div class="input-wrapper">
+            <textarea id="speechInput" placeholder="Press Record to speak, paste your script, or upload a file..."></textarea>
+        </div>
+
+        <div class="controls-row" style="justify-content: center;">
+            <button class="btn btn-ghost btn-record" id="micBtn" style="min-width: 150px;">
+                <i class="fa-solid fa-microphone"></i> Start Recording
+            </button>
+            <button class="btn btn-primary" id="analyzeBtn" style="min-width: 200px;">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Analyze Speech
+            </button>
+        </div>
+
+        <div class="loader" id="loader">
+            <i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing Rhetoric & Logic...
+        </div>
+
+        <div class="feedback-panel" id="resultPanel">
+            <h3><i class="fa-solid fa-robot"></i> Judge's Feedback</h3>
+            <div class="feedback-content" id="resultContent"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+
+        // ============================================
+        // ⚠️ SECURITY STEP: REPLACE THIS KEY
+        // ============================================
+        // You must restrict this key in Google Cloud Console to your GitHub URL.
+        const API_KEY = "AIzaSyCsKijPDr-BKoAvtZ_Z_CQJ3MjT5bh7-64"; 
+        
+        const MODEL_NAME = "gemini-2.5-flash";
+
+        // --- STATE & DOM ---
+        let recognition;
+        let timerInterval;
+        let secondsElapsed = 0;
+        let isRecording = false;
+        let fillerCount = 0;
+        let finalTranscript = ''; 
+        let lastFillerTime = 0;
+
+        const micBtn = document.getElementById('micBtn');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const topicBtn = document.getElementById('topicBtn');
+        const textarea = document.getElementById('speechInput');
+        const select = document.getElementById('formatSelect');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const wpmDisplay = document.getElementById('wpmDisplay');
+        const fillerDisplay = document.getElementById('fillerDisplay');
+        const resultPanel = document.getElementById('resultPanel');
+        const resultContent = document.getElementById('resultContent');
+        const loader = document.getElementById('loader');
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+
+        // --- 1. FILE UPLOAD LOGIC ---
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+
+        async function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            dropZone.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Reading ${file.name}...`;
+
+            try {
+                let text = "";
+                if (file.type === "text/plain") {
+                    text = await readTextFile(file);
+                } else if (file.type === "application/pdf") {
+                    text = await readPdfFile(file);
+                } else if (file.type.includes("word")) { // Docx
+                    text = await readDocxFile(file);
+                } else {
+                    alert("Please upload TXT, PDF, or DOCX."); resetDropZone(); return;
+                }
+                textarea.value = text;
+                updateWPM();
+                dropZone.innerHTML = `<i class="fa-solid fa-check" style="color:var(--neon-blue)"></i> ${file.name} Loaded!`;
+                setTimeout(resetDropZone, 3000);
+            } catch (error) {
+                console.error(error);
+                dropZone.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color:#ff5555"></i> Error reading file`;
+            }
+        }
+
+        function resetDropZone() {
+            dropZone.innerHTML = `<input type="file" id="fileInput" accept=".txt,.pdf,.docx" hidden><i class="fa-solid fa-cloud-arrow-up"></i> <span>Click to upload or Drag & Drop (PDF, DOCX, TXT)</span>`;
+        }
+
+        function readTextFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+
+        function readDocxFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    mammoth.extractRawText({ arrayBuffer: e.target.result })
+                        .then(result => resolve(result.value)).catch(reject);
+                };
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        async function readPdfFile(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullText = "";
+            for (let i = 1; i <= pdf.numPages; i++) {
+                fullText += (await (await pdf.getPage(i)).getTextContent()).items.map(s => s.str).join(" ") + "\n";
+            }
+            return fullText;
+        }
+
+        // --- 2. SPEECH RECOGNITION ---
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript + ' ';
+                    } else {
+                        interimTranscript += transcript;
+                        checkForFillers(transcript);
+                    }
+                }
+                textarea.value = finalTranscript + interimTranscript;
+                updateWPM();
+            };
+        } else { micBtn.disabled = true; micBtn.innerText = "❌ No Mic"; }
+
+        function checkForFillers(text) {
+            const now = Date.now();
+            if (now - lastFillerTime < 800) return; 
+            const weakWords = ["like", "basically", "actually", "literally", "i mean", "you know", "sort of", "um", "uh"];
+            if (new RegExp(`\\b(${weakWords.join('|')})\\b`, 'i').test(text)) {
+                fillerCount++;
+                fillerDisplay.innerText = fillerCount;
+                lastFillerTime = now;
+                fillerDisplay.parentElement.style.borderColor = "#ff5555";
+                setTimeout(() => fillerDisplay.parentElement.style.borderColor = "var(--glass-border)", 300);
+            }
+        }
+
+        // --- 3. CONTROLS ---
+        micBtn.addEventListener('click', () => isRecording ? stopRecording() : startRecording());
+
+        function startRecording() {
+            isRecording = true;
+            micBtn.innerHTML = `<i class="fa-solid fa-stop"></i> Stop Recording`;
+            micBtn.classList.add('recording');
+            recognition.start();
+            startTimer();
+        }
+
+        function stopRecording() {
+            isRecording = false;
+            micBtn.innerHTML = `<i class="fa-solid fa-microphone"></i> Start Recording`;
+            micBtn.classList.remove('recording');
+            recognition.stop();
+            stopTimer();
+            finalTranscript = textarea.value; 
+        }
+
+        function startTimer() {
+            stopTimer(); 
+            secondsElapsed = 0;
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                const mins = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+                const secs = (secondsElapsed % 60).toString().padStart(2, '0');
+                timerDisplay.innerText = `${mins}:${secs}`;
+                updateWPM(); 
+            }, 1000);
+        }
+
+        function stopTimer() { clearInterval(timerInterval); }
+
+        function updateWPM() {
+            const text = textarea.value.trim();
+            if (!text) return;
+            const words = text.split(/\s+/).filter(w => w.length > 0).length;
+            if (secondsElapsed > 0) wpmDisplay.innerText = Math.round((words / secondsElapsed) * 60);
+        }
+
+        // --- 4. AI LOGIC ---
+        analyzeBtn.addEventListener('click', async () => {
+            const text = textarea.value.trim();
+            if (!text) return alert("Please input text first!");
+            if (!API_KEY.startsWith("AIza")) return alert("Please insert your API Key in the HTML file!");
+
+            loader.style.display = 'block';
+            resultPanel.style.display = 'none';
+            analyzeBtn.disabled = true;
+
+            try {
+                const genAI = new GoogleGenerativeAI(API_KEY);
+                const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+
+                const prompt = `
+                ACT AS: Master Debate Judge.
+                FORMAT: ${select.value}.
+                STATS: Speed: ${wpmDisplay.innerText} WPM, Weak Words: ${fillerCount}.
+                
+                SPEECH TEXT: "${text}"
+                
+                PROVIDE:
+                1. Score /10.
+                2. Analysis of Logic & Rhetoric.
+                3. Speed/Tone Critique.
+                4. 3 Actionable Improvements.
+                
+                Output in HTML format (use <strong> for bold, <br> for breaks).
+                `;
+
+                const result = await model.generateContent(prompt);
+                const response = await result.response;
+                
+                resultContent.innerHTML = response.text().replace(/```html/g, '').replace(/```/g, '');
+                resultPanel.style.display = 'block';
+
+            } catch (error) {
+                alert("AI Error: " + error.message);
+            } finally {
+                loader.style.display = 'none';
+                analyzeBtn.disabled = false;
+            }
+        });
+
+        // --- 5. TOPIC & CLEAR ---
+        topicBtn.addEventListener('click', async () => {
+            if (!API_KEY.startsWith("AIza")) return alert("Add API Key first!");
+            topicBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Generating...`;
+            try {
+                const genAI = new GoogleGenerativeAI(API_KEY);
+                const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+                const result = await model.generateContent("Give me one controversial debate topic.");
+                textarea.value = `Topic: "${result.response.text().trim()}"\n`;
+            } catch(e) { console.error(e); } 
+            finally { topicBtn.innerHTML = `<i class="fa-solid fa-dice"></i> New Topic`; }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            textarea.value = '';
+            finalTranscript = '';
+            fillerCount = 0; secondsElapsed = 0;
+            timerDisplay.innerText = "00:00"; wpmDisplay.innerText = "0"; fillerDisplay.innerText = "0";
+            resultPanel.style.display = 'none';
+            stopRecording();
+        });
+    </script>
+</body>
+</html>
